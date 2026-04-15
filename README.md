@@ -2,8 +2,6 @@
 
 本项目是一个本地单用户 Web 工具，用来把金数据表单导出、正赛资格名单维护、单打报名比对、NapCat QQ 通知、优赛上传表生成串成一套可重复执行的流程。
 
-项目目录：`C:\Users\Theta\uestc_tt_manager`
-
 ## 功能概览
 
 - 绑定金数据中的 4 张表：
@@ -11,7 +9,7 @@
   - 正赛单打报名表
   - 正赛双打报名表
   - 正赛团体报名表
-- 从金数据导出表单快照到本地 `runs/` 目录
+- 从金数据导出表单快照到本地 `runs/` 目录，并额外归档到 `data/form_exports/`
 - 维护本地资格名单主表 `data/qualification_master.xlsx`
 - 批量输入姓名，从资格赛报名表中匹配 `姓名 / 学院 / QQ号`
 - 比对两类异常：
@@ -40,53 +38,56 @@
 
 ## 安装
 
-### 1. 创建虚拟环境
+在项目根目录执行：
 
 ```powershell
-cd C:\Users\Theta\uestc_tt_manager
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-### 2. 安装 Python 依赖
-
-```powershell
 pip install -r requirements.txt
-```
-
-### 3. 安装 Playwright Chromium
-
-```powershell
 playwright install chromium
 ```
 
-## 启动方式
+## 启动
 
-### 方式一：直接命令行启动
+在项目根目录执行：
 
 ```powershell
-cd C:\Users\Theta\uestc_tt_manager
 .\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 ```
-
-### 方式二：双击批处理启动
-
-直接运行：
-
-`C:\Users\Theta\uestc_tt_manager\start_server.bat`
-
-### 访问地址
 
 浏览器打开：
 
 [http://127.0.0.1:8050](http://127.0.0.1:8050)
 
-## 首次使用
+## 首次启动
 
-### 1. 系统配置
+页面顶部已经提供了“首次启动说明”和“当前配置检查”，新设备建议按这个顺序完成。
 
-在“系统配置”页填写或确认：
+### 1. 配置 NapCat
+
+本项目不再内置任何机器专属的 NapCat 路径。首次使用时，需要你在页面里自行填写本机配置文件路径。
+
+推荐流程：
+
+1. 正常安装并登录 QQ 桌面端
+2. 安装并启动 NapCat
+3. 打开 NapCat WebUI
+4. 启用 OneBot 11 的 WS 服务端
+5. 找到 NapCat 生成的配置文件 `onebot11_你的QQ号.json`
+6. 把这个文件的本机路径填到页面里的“NapCat 配置路径”
+
+常见配置文件位置类似：
+
+```text
+C:\ProgramData\NapCatQQ Desktop\runtime\NapCatQQ\config\onebot11_你的QQ号.json
+```
+
+这只是常见位置，不同设备、不同安装方式、不同 QQ 号都可能不同。
+
+### 2. 配置金数据
+
+在页面的“系统配置”中填写或确认：
 
 - 成电杯赛事群群号
 - NapCat 配置路径
@@ -94,16 +95,14 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 - 金数据浏览器 Profile 目录
 - QQ 通知模板
 
-### 2. 登录并发现表单
-
-点击：
+然后点击：
 
 - `检查金数据登录`
 - 或 `登录并刷新表单列表`
 
 如果是首次使用，系统会用可见浏览器打开金数据；你在浏览器里完成登录后即可继续。
 
-### 3. 绑定 4 张金数据表
+### 3. 绑定 4 张表
 
 每张表都支持两种方式：
 
@@ -114,9 +113,11 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 
 ### 4. 保存配置
 
-点击 `保存配置`，配置会写入：
+点击 `保存配置` 后，配置会写入：
 
-`data/config.json`
+```text
+data/config.json
+```
 
 ## 主要使用流程
 
@@ -197,8 +198,6 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 4. 表格中默认只会勾选 `precheck_ok` 的对象
 5. 点击 `给勾选对象发通知`
 
-通知结果会落盘到对应运行目录。
-
 ### 流程 E：优赛上传表生成
 
 1. 在“优赛上传表”中填写最终报名文件路径，或直接上传文件
@@ -214,6 +213,15 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 - `upload_preview.xlsx`
 - `优赛上传表.xlsx`
 
+## 导出归档目录
+
+导出已绑定表单后，文件会保留两份：
+
+- 任务运行目录中的快照
+- 固定归档目录 `data/form_exports/`
+
+页面里有“快捷打开导出文件夹”按钮，可以直接打开这个归档目录。
+
 ## 目录说明
 
 ### 重要目录
@@ -221,7 +229,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 - `app/`
   - Web 应用代码
 - `data/`
-  - 本地配置和资格名单主表
+  - 本地配置、资格名单主表、导出归档目录
 - `browser_state/`
   - 金数据 Playwright 登录态
 - `runs/`
@@ -239,12 +247,21 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
   - 本地资格名单主表
 - `requirements.txt`
   - Python 依赖
-- `start_server.bat`
-  - Windows 启动脚本
 
 ## 常见问题
 
-### 1. 金数据导出失败
+### 1. 别人 clone 仓库后能不能直接用
+
+核心代码和数据目录是相对项目根目录工作的，不绑定某个用户名目录。
+
+但首次使用时仍需要在新设备上自行配置：
+
+- NapCat 配置路径
+- 金数据登录态
+- 成电杯赛事群群号
+- 四张金数据表绑定
+
+### 2. 金数据导出失败
 
 优先检查：
 
@@ -254,7 +271,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 
 调试文件通常会落在对应 `runs/.../exports/.../` 目录中。
 
-### 2. 匹配 QQ 时提示缺少列
+### 3. 匹配 QQ 时提示缺少列
 
 通常是金数据导出表头和预期列名不一致。当前系统已兼容常见列名：
 
@@ -263,9 +280,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 - `学院`
 - `学院部门（教学科研单位、研究机构）`
 
-如果你又改了表头，可能还需要继续补别名。
-
-### 3. QQ 预检成功但无法发送
+### 4. QQ 预检成功但无法发送
 
 常见原因：
 
@@ -273,25 +288,12 @@ uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload
 - 当前 QQ 环境不支持该对象的群临时会话
 - NapCat 未正常在线
 
-### 4. 页面按钮点了没反应
-
-先看页面上的结果框和顶部状态条。
-
-再看后端控制台是否有异常。
-
 ## 测试
 
 在项目根目录执行：
 
 ```powershell
-cd C:\Users\Theta\uestc_tt_manager
-.\.venv\Scripts\Activate.ps1
 pytest app\tests -q
-```
-
-也可以做一次编译检查：
-
-```powershell
 python -m compileall app
 ```
 
@@ -302,10 +304,10 @@ python -m compileall app
 - `browser_state/`
 - `runs/`
 - `data/config.json`
+- `data/qualification_master.xlsx`
+- `data/form_exports/`
 - 任何真实报名数据、资格名单、导出快照
 - NapCat token、QQ 配置、个人账号信息
-
-本仓库已经建议通过 `.gitignore` 排除这些本地数据。
 
 ## 上游依赖说明
 
@@ -313,4 +315,4 @@ python -m compileall app
 
 - `vendor/UESTC_TT_registration_converter`
 
-它用于最终报名表转换和查重，但本系统在其外层又加了一层 Web 化适配。
+它用于最终报名表转换和查重，本系统在其外层增加了 Web 化适配和本地流程编排。

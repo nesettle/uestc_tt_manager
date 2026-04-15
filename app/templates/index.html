@@ -18,10 +18,31 @@
     </header>
 
     <section class="card">
+      <h2>首次启动说明</h2>
+      <div class="result-box">
+        <p>首次在新设备上使用时，建议先按下面顺序完成准备。</p>
+        <ol>
+          <li>在项目根目录创建虚拟环境并安装依赖，然后执行 `uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload` 启动服务。</li>
+          <li>打开金数据并在可见浏览器中完成登录，系统会把登录态保存到本地 `browser_state/`。</li>
+          <li>安装并配置 NapCat。需要在 NapCat WebUI 中启用 OneBot 11 的 WS 服务端。</li>
+          <li>把 NapCat 生成的 `onebot11_你的QQ号.json` 配置文件路径填到下方“NapCat 配置路径”。</li>
+        </ol>
+        <p>NapCat 配置提示：</p>
+        <ol>
+          <li>确认 QQ 桌面端和 NapCat 已正常安装并登录。</li>
+          <li>在 NapCat WebUI 里启用 OneBot 11，推荐使用 WS 服务端。</li>
+          <li>保存后找到本机生成的配置文件，常见位置类似 `C:\ProgramData\NapCatQQ Desktop\runtime\NapCatQQ\config\onebot11_你的QQ号.json`。</li>
+          <li>把这条本机路径填写到系统配置中。不同电脑、不同 QQ 号的路径都可能不同。</li>
+        </ol>
+      </div>
+      <div id="startup-check" class="result-box"></div>
+    </section>
+
+    <section class="card">
       <h2>系统配置</h2>
       <div class="grid two">
         <label>成电杯赛事群群号<input id="event_group_id" type="text"></label>
-        <label>NapCat 配置路径<input id="napcat_config_path" type="text"></label>
+        <label>NapCat 配置路径<input id="napcat_config_path" type="text" placeholder="例如：C:\ProgramData\NapCatQQ Desktop\runtime\NapCatQQ\config\onebot11_你的QQ号.json"></label>
         <label>金数据主页<input id="jinshuju_home_url" type="text"></label>
         <label>金数据 Profile 目录<input id="jinshuju_profile_dir" type="text"></label>
       </div>
@@ -67,8 +88,10 @@
           <option value="team_form">导出正赛团体报名表</option>
         </select>
         <button id="export-form-btn">导出已绑定表单</button>
+        <button id="open-form-exports-btn" type="button">快捷打开导出文件夹</button>
       </div>
 
+      <div id="form-exports-dir" class="result-box"></div>
       <div id="forms-discover-result" class="result-box"></div>
       <div id="form-export-result" class="result-box"></div>
     </section>

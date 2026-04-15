@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from html import unescape
 import json
+from datetime import datetime
 from pathlib import Path
 from tempfile import mkdtemp
 import re
+import shutil
 import time
 from typing import Any
 from urllib.request import urlopen
 
 from playwright.sync_api import BrowserContext, Error, Locator, Page, sync_playwright
 
-from app.settings import AppConfig
+from app.settings import AppConfig, FORM_EXPORTS_DIR
 from app.tasks import TaskContext
 
 
@@ -69,6 +71,33 @@ def normalize_form_title(value: str) -> str:
     cleaned = re.sub(r"^\[(?:新|NEW)\]\s*", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned
+
+
+def sanitize_export_filename(value: str) -> str:
+    cleaned = normalize_form_title(value) or "form"
+    cleaned = re.sub(r'[\\/:*?"<>|]+', "_", cleaned)
+    cleaned = re.sub(r"\s+", "_", cleaned).strip("._ ")
+    return cleaned[:80] or "form"
+
+
+def archive_export_copy(
+    export_file: Path,
+    *,
+    export_tag: str,
+    form_title: str | None,
+    archive_root: Path = FORM_EXPORTS_DIR,
+) -> Path:
+    archive_dir = archive_root / export_tag
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    base_name = sanitize_export_filename(form_title or export_tag)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = archive_dir / f"{timestamp}-{base_name}{export_file.suffix}"
+    counter = 1
+    while target.exists():
+        target = archive_dir / f"{timestamp}-{base_name}-{counter}{export_file.suffix}"
+        counter += 1
+    shutil.copy2(export_file, target)
+    return target
 
 
 def wait_for_login(page: Page, home_url: str, timeout_ms: int = 300000) -> None:
@@ -579,9 +608,16 @@ def export_form_snapshot(
         download_format=download_format,
         headless=headless,
     )
+    archived_export_file = archive_export_copy(
+        export_file,
+        export_tag=export_tag,
+        form_title=form_title,
+    )
     return {
         "run_dir": str(target_run_dir),
         "export_file": str(export_file),
+        "archived_export_file": str(archived_export_file),
+        "archived_export_dir": str(archived_export_file.parent),
         "form_title": form_title or "",
         "entries_url": entries_url or "",
         "download_format": download_format,

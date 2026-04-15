@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -9,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.services import compare, converter, jinshuju, notify, qualification
-from app.settings import AppConfig, DiscoveredForm, TEMPLATES_DIR, load_config, save_config
+from app.settings import AppConfig, DiscoveredForm, FORM_EXPORTS_DIR, TEMPLATES_DIR, load_config, save_config
 from app.services.common import ensure_run_dir
 from app.tasks import task_manager
 
@@ -111,6 +112,19 @@ async def export_jinshuju_form(request: Request) -> JSONResponse:
         export_tag=binding_name or "manual_export",
     )
     return JSONResponse({"task_id": state.id})
+
+
+@app.get("/api/jinshuju/form-exports-dir")
+def get_jinshuju_form_exports_dir() -> JSONResponse:
+    FORM_EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    return JSONResponse({"path": str(FORM_EXPORTS_DIR)})
+
+
+@app.post("/api/jinshuju/form-exports/open")
+def open_jinshuju_form_exports_dir() -> JSONResponse:
+    FORM_EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.Popen(["explorer.exe", str(FORM_EXPORTS_DIR)])
+    return JSONResponse({"path": str(FORM_EXPORTS_DIR), "opened": True})
 
 
 @app.post("/api/qualification/resolve")

@@ -13,6 +13,7 @@ def test_index_page_renders():
     response = client.get("/")
     assert response.status_code == 200
     assert "成电杯报名数据管理系统" in response.text
+    assert "首次启动说明" in response.text
 
 
 def test_export_route_returns_task_id(monkeypatch):
@@ -28,6 +29,29 @@ def test_export_route_returns_task_id(monkeypatch):
     )
     assert response.status_code == 200
     assert response.json()["task_id"] == "export-task"
+
+
+def test_form_exports_dir_route_returns_path():
+    client = TestClient(app)
+    response = client.get("/api/jinshuju/form-exports-dir")
+    assert response.status_code == 200
+    assert response.json()["path"].endswith("data\\form_exports")
+
+
+def test_open_form_exports_dir_opens_explorer(monkeypatch):
+    client = TestClient(app)
+    captured = {}
+
+    def fake_popen(args):
+        captured["args"] = args
+        return None
+
+    monkeypatch.setattr("app.main.subprocess.Popen", fake_popen)
+    response = client.post("/api/jinshuju/form-exports/open")
+    assert response.status_code == 200
+    assert response.json()["opened"] is True
+    assert captured["args"][0].lower() == "explorer.exe"
+    assert str(captured["args"][1]).endswith("data\\form_exports")
 
 
 def test_converter_prepare_accepts_json(monkeypatch):

@@ -9,6 +9,7 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
 RUNS_DIR = PROJECT_ROOT / "runs"
+FORM_EXPORTS_DIR = DATA_DIR / "form_exports"
 BROWSER_STATE_DIR = PROJECT_ROOT / "browser_state"
 STATIC_DIR = PROJECT_ROOT / "app" / "static"
 TEMPLATES_DIR = PROJECT_ROOT / "app" / "templates"
@@ -16,9 +17,7 @@ VENDOR_DIR = PROJECT_ROOT / "vendor"
 CONFIG_PATH = DATA_DIR / "config.json"
 QUALIFICATION_MASTER_PATH = DATA_DIR / "qualification_master.xlsx"
 
-DEFAULT_NAPCAT_CONFIG_PATH = (
-    r"C:\ProgramData\NapCatQQ Desktop\runtime\NapCatQQ\config\onebot11_3496930386.json"
-)
+DEFAULT_NAPCAT_CONFIG_PATH = ""
 DEFAULT_NOTIFY_TEMPLATE = (
     "{name}同学你好，我是乒协机器人，这边发现你在正赛资格名单中，但单打项目报名表中没有你的信息。"
     "请你确认是否参加成电杯单打项目，如果参加，请填写群里的单打报名链接。"
@@ -103,7 +102,7 @@ class AppConfig:
 
 
 def ensure_directories() -> None:
-    for path in (DATA_DIR, RUNS_DIR, BROWSER_STATE_DIR, STATIC_DIR, TEMPLATES_DIR, VENDOR_DIR):
+    for path in (DATA_DIR, RUNS_DIR, FORM_EXPORTS_DIR, BROWSER_STATE_DIR, STATIC_DIR, TEMPLATES_DIR, VENDOR_DIR):
         path.mkdir(parents=True, exist_ok=True)
 
 

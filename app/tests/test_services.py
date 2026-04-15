@@ -1,5 +1,11 @@
 from app.services.common import detect_export_columns, normalize_college, normalize_name, normalize_qq, primary_key
-from app.services.jinshuju import extract_forms_from_home_html, normalize_form_title
+from app.services.jinshuju import (
+    archive_export_copy,
+    extract_forms_from_home_html,
+    normalize_form_title,
+    sanitize_export_filename,
+)
+from app.settings import AppConfig, DEFAULT_NAPCAT_CONFIG_PATH
 
 
 def test_normalize_name_removes_suffix_note():
@@ -63,3 +69,29 @@ def test_detect_export_columns_accepts_qualification_college_header():
     assert found["college"] == 1
     assert found["name"] == 2
     assert found["qq"] == 3
+
+
+def test_sanitize_export_filename_removes_invalid_chars():
+    assert sanitize_export_filename('成电杯/正赛:单打*报名表?') == "成电杯_正赛_单打_报名表"
+
+
+def test_archive_export_copy_writes_into_tag_directory(tmp_path):
+    export_file = tmp_path / "jinshuju_export.xlsx"
+    export_file.write_bytes(b"demo")
+
+    archived = archive_export_copy(
+        export_file,
+        export_tag="singles_form",
+        form_title="成电杯正赛单打项目报名",
+        archive_root=tmp_path / "form_exports",
+    )
+
+    assert archived.parent.name == "singles_form"
+    assert archived.suffix == ".xlsx"
+    assert "成电杯正赛单打项目报名" in archived.name
+    assert archived.read_bytes() == b"demo"
+
+
+def test_default_napcat_path_is_empty():
+    assert DEFAULT_NAPCAT_CONFIG_PATH == ""
+    assert AppConfig().napcat_config_path == ""

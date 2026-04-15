@@ -10,6 +10,7 @@ runs/
 
 data/config.json
 data/qualification_master.xlsx
+data/form_exports/
 
 vendor/UESTC_TT_registration_converter/.git/
 

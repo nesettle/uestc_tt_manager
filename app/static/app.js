@@ -130,6 +130,45 @@ function fillConfig(config) {
       select.appendChild(option);
     });
   });
+
+  renderStartupCheck(config);
+}
+
+function renderStartupCheck(config) {
+  const formBindings = [
+    ["资格赛报名表", config.qualification_form],
+    ["正赛单打报名表", config.singles_form],
+    ["正赛双打报名表", config.doubles_form],
+    ["正赛团体报名表", config.team_form],
+  ];
+  const configuredFormCount = formBindings.filter(([, binding]) => binding?.title || binding?.entries_url).length;
+  const rows = [
+    {
+      项目: "NapCat 配置路径",
+      状态: config.napcat_config_path ? "已填写" : "待填写",
+      说明: config.napcat_config_path
+        ? config.napcat_config_path
+        : "请先在 NapCat WebUI 启用 OneBot 11 的 WS 服务端，再填写本机 onebot11_你的QQ号.json 路径",
+    },
+    {
+      项目: "赛事群群号",
+      状态: config.event_group_id ? "已填写" : "待填写",
+      说明: config.event_group_id || "后续群临时会话预检和发送都会使用这个群号",
+    },
+    {
+      项目: "金数据 Profile 目录",
+      状态: config.jinshuju_profile_dir ? "已填写" : "待填写",
+      说明: config.jinshuju_profile_dir || "首次登录成功后，Playwright 会把登录态保存在这个目录",
+    },
+    {
+      项目: "已绑定表单",
+      状态: `${configuredFormCount}/4`,
+      说明: formBindings
+        .map(([label, binding]) => `${label}：${binding?.title || binding?.entries_url || "未绑定"}`)
+        .join("；"),
+    },
+  ];
+  renderRows("startup-check", rows, ["项目", "状态", "说明"], "暂无配置检查结果");
 }
 
 function renderObjectSummary(targetId, data) {
@@ -199,6 +238,20 @@ function renderDiscoveredForms(forms) {
     .map((row) => `<tr><td>${row.标题}</td><td>${row.最近更新时间}</td><td>${row.链接}</td></tr>`)
     .join("");
   $("forms-discover-result").innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+async function loadFormExportsDir() {
+  const result = await apiGet("/api/jinshuju/form-exports-dir");
+  $("form-exports-dir").innerHTML = `<p><span class="pill">导出归档目录</span> ${result.path}</p>`;
+}
+
+async function openFormExportsDir() {
+  try {
+    const result = await apiPostJson("/api/jinshuju/form-exports/open");
+    setGlobalStatus(`已打开导出文件夹：${result.path}`);
+  } catch (error) {
+    renderError("form-export-result", error);
+  }
 }
 
 function renderResolveResult(result) {
@@ -355,6 +408,7 @@ function renderConverterPrepare(result) {
 
 async function bootstrap() {
   fillConfig(await apiGet("/api/config"));
+  await loadFormExportsDir();
   renderDiscoveredForms(state.config?.discovered_forms || []);
   await loadQualificationMaster();
   updateQualificationMasterVisibility();
@@ -396,6 +450,8 @@ async function bootstrap() {
       setGlobalStatus(`导出失败：${error.message}`);
     }
   });
+
+  $("open-form-exports-btn").addEventListener("click", openFormExportsDir);
 
   $("resolve-names-btn").addEventListener("click", async () => {
     try {

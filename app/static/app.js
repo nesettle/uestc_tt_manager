@@ -4,6 +4,7 @@ const state = {
   qualifiedCompare: null,
   notifyPrecheck: null,
   converterPrepare: null,
+  qualificationMasterRows: [],
   qualificationMasterCollapsed: false,
 };
 
@@ -147,20 +148,22 @@ function updateQualificationMasterVisibility() {
   if (!resultBox || !toggleButton) return;
   resultBox.classList.toggle("collapsed", state.qualificationMasterCollapsed);
   toggleButton.textContent = state.qualificationMasterCollapsed
-    ? "展开已获取资格名单"
-    : "收起已获取资格名单";
+    ? "展开已获取到的资格名单"
+    : "收起已获取到的资格名单";
 }
 
 function buildSimpleTable(rows, columns, checkbox = false) {
   const header = columns.map((col) => `<th>${col}</th>`).join("");
-  const checkboxHeader = checkbox ? `<th class="checkbox-cell">选</th>` : "";
-  const body = rows.map((row, index) => {
-    const checkboxCell = checkbox
-      ? `<td class="checkbox-cell"><input type="checkbox" data-row-index="${index}" checked></td>`
-      : "";
-    const cells = columns.map((col) => `<td>${row[col] ?? ""}</td>`).join("");
-    return `<tr>${checkboxCell}${cells}</tr>`;
-  }).join("");
+  const checkboxHeader = checkbox ? `<th class="checkbox-cell">选择</th>` : "";
+  const body = rows
+    .map((row, index) => {
+      const checkboxCell = checkbox
+        ? `<td class="checkbox-cell"><input type="checkbox" data-row-index="${index}" checked></td>`
+        : "";
+      const cells = columns.map((col) => `<td>${row[col] ?? ""}</td>`).join("");
+      return `<tr>${checkboxCell}${cells}</tr>`;
+    })
+    .join("");
   return `<table><thead><tr>${checkboxHeader}${header}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
@@ -170,6 +173,15 @@ function renderRows(targetId, rows, columns, emptyText, checkbox = false) {
     return;
   }
   $(targetId).innerHTML = buildSimpleTable(rows, columns, checkbox);
+}
+
+function collectCheckedRows(containerId, rows) {
+  const container = $(containerId);
+  if (!container) return [];
+  const checked = [...container.querySelectorAll("input[type=checkbox]:checked")];
+  return checked
+    .map((input) => rows[Number(input.dataset.rowIndex)])
+    .filter(Boolean);
 }
 
 function renderDiscoveredForms(forms) {
@@ -183,7 +195,9 @@ function renderDiscoveredForms(forms) {
     链接: `<a href="${item.url}" target="_blank" rel="noreferrer">打开</a>`,
   }));
   const header = ["标题", "最近更新时间", "链接"].map((col) => `<th>${col}</th>`).join("");
-  const body = rows.map((row) => `<tr><td>${row.标题}</td><td>${row.最近更新时间}</td><td>${row.链接}</td></tr>`).join("");
+  const body = rows
+    .map((row) => `<tr><td>${row.标题}</td><td>${row.最近更新时间}</td><td>${row.链接}</td></tr>`)
+    .join("");
   $("forms-discover-result").innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
@@ -195,19 +209,23 @@ function renderResolveResult(result) {
   ];
   if (result.resolved.length) {
     blocks.push("<h3>已直接匹配</h3>");
-    blocks.push(buildSimpleTable(result.resolved, ["name", "college", "qq", "source", "row_number", "created_at", "updated_at"]));
+    blocks.push(
+      buildSimpleTable(result.resolved, ["name", "college", "qq", "source", "row_number", "created_at", "updated_at"]),
+    );
   }
   if (result.ambiguous.length) {
     blocks.push("<h3>待人工确认</h3>");
     result.ambiguous.forEach((group, idx) => {
       let options = "";
       group.candidates.forEach((candidate, candidateIdx) => {
-        options += `<option value="${candidateIdx}">${candidate.name} | ${candidate.college} | ${candidate.qq} | ${candidate.created_at || "无提交时间"} </option>`;
+        options += `<option value="${candidateIdx}">${candidate.name} | ${candidate.college} | ${candidate.qq} | ${candidate.created_at || "无提交时间"}</option>`;
       });
-      blocks.push(`<div class="result-box"><p class="warn">${group.input_name}</p><select id="ambiguous_${idx}">${options}</select></div>`);
+      blocks.push(
+        `<div class="result-box"><p class="warn">${group.input_name}</p><select id="ambiguous_${idx}">${options}</select></div>`,
+      );
     });
   }
-  blocks.push(`<div class="actions"><button id="apply-resolve-btn">合并更新到本地资格名单</button></div>`);
+  blocks.push('<div class="actions"><button id="apply-resolve-btn">合并更新到本地资格名单</button></div>');
   $("qualification-resolve-result").innerHTML = blocks.join("");
   $("apply-resolve-btn").addEventListener("click", applyResolveSelection);
 }
@@ -221,30 +239,58 @@ async function applyResolveSelection() {
   });
   const kickoff = await apiPostJson("/api/qualification/apply", { selections });
   const result = await waitTask(kickoff.task_id);
-  renderObjectSummary("qualification-master-result", result);
+  renderObjectSummary("qualification-resolve-result", result);
   await loadQualificationMaster();
 }
 
 async function loadQualificationMaster() {
   const result = await apiGet("/api/qualification/current");
-  const rows = (result.rows || []).map((row) => ({
+  state.qualificationMasterRows = result.rows || [];
+  const rows = state.qualificationMasterRows.map((row) => ({
     姓名: row["姓名"],
     学院: row["学院"],
     QQ号: row["QQ号"],
     来源表单: row["来源表单"],
     最近更新时间: row["最近更新时间"],
   }));
-  renderRows("qualification-master-result", rows, ["姓名", "学院", "QQ号", "来源表单", "最近更新时间"], "本地资格名单为空");
+  renderRows(
+    "qualification-master-result",
+    rows,
+    ["姓名", "学院", "QQ号", "来源表单", "最近更新时间"],
+    "本地资格名单为空",
+    true,
+  );
+  [...$("qualification-master-result").querySelectorAll("input[type=checkbox]")].forEach((input) => {
+    input.checked = false;
+  });
   updateQualificationMasterVisibility();
 }
 
+async function deleteSelectedQualificationRows() {
+  const selectedRows = collectCheckedRows("qualification-master-result", state.qualificationMasterRows);
+  if (!selectedRows.length) {
+    alert("请先勾选要删除的资格名单成员");
+    return;
+  }
+  if (!window.confirm(`确认删除已勾选的 ${selectedRows.length} 名资格名单成员吗？系统会先生成快照。`)) {
+    return;
+  }
+
+  try {
+    const payload = {
+      rows: selectedRows.map((row) => ({ row_number: row.row_number })),
+    };
+    const kickoff = await apiPostJson("/api/qualification/delete", payload);
+    const result = await waitTask(kickoff.task_id);
+    renderObjectSummary("qualification-resolve-result", result);
+    await loadQualificationMaster();
+  } catch (error) {
+    renderError("qualification-resolve-result", error);
+  }
+}
+
 function renderCompareResult(targetId, result, emptyText) {
-  renderRows(
-    targetId,
-    result.rows || [],
-    ["name", "college", "qq", "source", "match_key", "reason"],
-    emptyText,
-  );
+  renderRows(targetId, result.rows || [], ["name", "college", "qq", "source", "match_key", "reason"], emptyText);
 }
 
 function renderNotifyPrecheck(result) {
@@ -266,14 +312,13 @@ function renderNotifyPrecheck(result) {
 }
 
 async function sendSelectedNotifications() {
-  const rows = state.notifyPrecheck?.rows || [];
-  const checked = [...$("notify-precheck-result").querySelectorAll("input[type=checkbox]:checked")];
-  const selectedRows = checked.map((input) => {
-    const row = rows[Number(input.dataset.rowIndex)];
-    return { name: row.name, college: row.college, qq: row.qq };
-  });
+  const selectedRows = collectCheckedRows("notify-precheck-result", state.notifyPrecheck?.rows || []).map((row) => ({
+    name: row.name,
+    college: row.college,
+    qq: row.qq,
+  }));
   if (!selectedRows.length) {
-    alert("请先勾选要发送的人");
+    alert("请先勾选要发送的对象");
     return;
   }
   const kickoff = await apiPostJson("/api/notify/send", { rows: selectedRows });
@@ -296,14 +341,14 @@ function renderConverterPrepare(result) {
   ];
   if (groups.length) {
     const rows = groups.map((group) => ({
-      标签: group.label,
+      重复组标签: group.label,
       类型: group.type,
       保留规则: group.keep_rule,
       重复次数: group.occurrences.length,
     }));
-    blocks.push(buildSimpleTable(rows, ["标签", "类型", "保留规则", "重复次数"]));
+    blocks.push(buildSimpleTable(rows, ["重复组标签", "类型", "保留规则", "重复次数"]));
   } else {
-    blocks.push(`<p class="muted">未发现重复项</p>`);
+    blocks.push('<p class="muted">未发现重复项</p>');
   }
   $("converter-prepare-result").innerHTML = blocks.join("");
 }
@@ -370,6 +415,8 @@ async function bootstrap() {
     window.location.href = "/api/qualification/export";
   });
 
+  $("delete-master-btn").addEventListener("click", deleteSelectedQualificationRows);
+
   $("toggle-master-btn").addEventListener("click", () => {
     state.qualificationMasterCollapsed = !state.qualificationMasterCollapsed;
     updateQualificationMasterVisibility();
@@ -431,7 +478,7 @@ async function bootstrap() {
       alert("请先执行查重预处理");
       return;
     }
-    if (!window.confirm("确认按“保留第一条/第一组”的规则删除重复项并生成优赛上传表？")) {
+    if (!window.confirm("确认按“保留第一条/第一组”的规则删除重复项并生成优赛上传表吗？")) {
       return;
     }
     const kickoff = await apiPostJson("/api/converter/confirm-dedupe", { run_dir: state.converterPrepare.run_dir });

@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">UESTC TT Manager</p>
         <h1>成电杯报名数据管理系统</h1>
-        <p class="subtitle">金数据导出、资格名单维护、报名比对、QQ 通知、优赛上传表，统一在本地页面里完成。</p>
+        <p class="subtitle">金数据导出、资格名单维护、报名比对、QQ 通知、优赛上传表统一在本地页面内完成。</p>
       </div>
       <div class="hero-status" id="global-task-status">等待操作</div>
     </header>
@@ -31,6 +31,7 @@
         <button id="check-session-btn">检查金数据登录</button>
         <button id="discover-forms-btn">登录并刷新表单列表</button>
       </div>
+
       <div class="grid four">
         <div>
           <h3>资格赛报名表</h3>
@@ -57,6 +58,7 @@
           <input id="team_entries_url" type="text" placeholder="可选：entries 直达链接">
         </div>
       </div>
+
       <div class="actions">
         <select id="export_binding">
           <option value="qualification_form">导出资格赛报名表</option>
@@ -66,6 +68,7 @@
         </select>
         <button id="export-form-btn">导出已绑定表单</button>
       </div>
+
       <div id="forms-discover-result" class="result-box"></div>
       <div id="form-export-result" class="result-box"></div>
     </section>
@@ -77,7 +80,8 @@
         <button id="resolve-names-btn">从资格赛报名表匹配 QQ</button>
         <button id="refresh-master-btn">刷新本地资格名单</button>
         <button id="export-master-btn">导出本地资格名单 Excel</button>
-        <button id="toggle-master-btn" type="button">收起已获取资格名单</button>
+        <button id="delete-master-btn" type="button">删除勾选成员</button>
+        <button id="toggle-master-btn" type="button">收起已获取到的资格名单</button>
       </div>
       <div id="qualification-resolve-result" class="result-box"></div>
       <div id="qualification-master-result" class="result-box"></div>
@@ -91,9 +95,10 @@
       </div>
       <div id="compare-form-result" class="result-box"></div>
       <div id="compare-qualified-result" class="result-box"></div>
+
       <div class="actions">
         <button id="notify-precheck-btn">对“有资格但没报单打”名单做 QQ 预检</button>
-        <button id="notify-send-btn">给勾选对象发送通知</button>
+        <button id="notify-send-btn">给勾选对象发通知</button>
       </div>
       <div id="notify-precheck-result" class="result-box"></div>
       <div id="notify-send-result" class="result-box"></div>
@@ -119,6 +124,7 @@
       <div id="converter-confirm-result" class="result-box"></div>
     </section>
   </main>
+
   <script src="/static/app.js"></script>
 </body>
 </html>

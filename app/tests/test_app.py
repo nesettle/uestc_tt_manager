@@ -73,6 +73,26 @@ def test_qualification_resolve_uses_request_binding(monkeypatch):
     assert captured["names"] == "张三"
 
 
+def test_qualification_delete_submits_rows(monkeypatch):
+    client = TestClient(app)
+    captured = {}
+
+    def fake_submit(kind, func, rows):
+        captured["kind"] = kind
+        captured["rows"] = rows
+        return DummyState("delete-task")
+
+    monkeypatch.setattr("app.main.task_manager.submit", fake_submit)
+    response = client.post(
+        "/api/qualification/delete",
+        json={"rows": [{"row_number": 2}, {"row_number": 5}]},
+    )
+    assert response.status_code == 200
+    assert response.json()["task_id"] == "delete-task"
+    assert captured["kind"] == "qualification_delete"
+    assert captured["rows"] == [{"row_number": 2}, {"row_number": 5}]
+
+
 def test_qualification_export_returns_xlsx():
     client = TestClient(app)
     response = client.get("/api/qualification/export")

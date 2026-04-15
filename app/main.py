@@ -138,6 +138,17 @@ async def qualification_apply(request: Request) -> JSONResponse:
     return JSONResponse({"task_id": state.id})
 
 
+@app.post("/api/qualification/delete")
+async def qualification_delete(request: Request) -> JSONResponse:
+    payload = await request.json()
+    state = task_manager.submit(
+        "qualification_delete",
+        qualification.delete_rows,
+        payload.get("rows") or [],
+    )
+    return JSONResponse({"task_id": state.id})
+
+
 @app.post("/api/compare/singles-vs-qualification-form")
 async def compare_singles_qualification_form(request: Request) -> JSONResponse:
     payload = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}

@@ -34,6 +34,7 @@ class MasterRow:
     source_form: str
     qualified_at: str
     updated_at: str
+    row_number: int | None = None
 
     @property
     def normalized_name(self) -> str:
@@ -47,8 +48,9 @@ class MasterRow:
     def normalized_qq(self) -> str:
         return normalize_qq(self.qq)
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str | int]:
         return {
+            "row_number": self.row_number or "",
             "姓名": self.name,
             "学院": self.college,
             "QQ号": self.qq,
@@ -65,8 +67,9 @@ def load_master_rows(path: Path = QUALIFICATION_MASTER_PATH) -> list[MasterRow]:
     rows = list(sheet.iter_rows(values_only=True))
     if not rows:
         return []
+
     results: list[MasterRow] = []
-    for row in rows[1:]:
+    for row_number, row in enumerate(rows[1:], start=2):
         values = list(row or [])
         if not any(values):
             continue
@@ -80,6 +83,7 @@ def load_master_rows(path: Path = QUALIFICATION_MASTER_PATH) -> list[MasterRow]:
                 source_form=str(values[3] or "").strip(),
                 qualified_at=str(values[4] or "").strip(),
                 updated_at=str(values[5] or "").strip(),
+                row_number=row_number,
             )
         )
     return results
@@ -91,9 +95,7 @@ def save_master_rows(rows: list[MasterRow], path: Path = QUALIFICATION_MASTER_PA
     sheet.title = "资格名单"
     sheet.append(MASTER_HEADERS)
     for row in rows:
-        sheet.append(
-            [row.name, row.college, row.qq, row.source_form, row.qualified_at, row.updated_at]
-        )
+        sheet.append([row.name, row.college, row.qq, row.source_form, row.qualified_at, row.updated_at])
     workbook.save(path)
 
 
@@ -117,7 +119,7 @@ def resolve_names(ctx: TaskContext, config: AppConfig, raw_names: str) -> dict:
     names = [normalize_name(line) for line in raw_names.splitlines()]
     names = [item for item in names if item]
     if not names:
-        raise RuntimeError("请输入至少一个姓名")
+        raise RuntimeError("请至少输入一个姓名")
 
     run_dir = ensure_run_dir("qualification-resolve")
     export_result = jinshuju.export_form_snapshot(
@@ -202,20 +204,23 @@ def apply_updates(ctx: TaskContext, config: AppConfig, selections: list[dict[str
                 ):
                     match_index = i
                     break
+
         if match_index is None:
             existing.append(candidate)
             appended += 1
-        else:
-            previous = existing[match_index]
-            existing[match_index] = MasterRow(
-                name=candidate.name or previous.name,
-                college=candidate.college or previous.college,
-                qq=candidate.qq or previous.qq,
-                source_form=candidate.source_form or previous.source_form,
-                qualified_at=previous.qualified_at or candidate.qualified_at,
-                updated_at=now,
-            )
-            updated += 1
+            continue
+
+        previous = existing[match_index]
+        existing[match_index] = MasterRow(
+            name=candidate.name or previous.name,
+            college=candidate.college or previous.college,
+            qq=candidate.qq or previous.qq,
+            source_form=candidate.source_form or previous.source_form,
+            qualified_at=previous.qualified_at or candidate.qualified_at,
+            updated_at=now,
+            row_number=previous.row_number,
+        )
+        updated += 1
 
     save_master_rows(existing)
     result = {
@@ -227,6 +232,62 @@ def apply_updates(ctx: TaskContext, config: AppConfig, selections: list[dict[str
         "appended": appended,
     }
     write_json(run_dir / "apply_result.json", result)
+    return result
+
+
+def _extract_selected_row_numbers(selections: list[dict[str, str] | int | str]) -> list[int]:
+    row_numbers: list[int] = []
+    seen: set[int] = set()
+    for item in selections:
+        value = item.get("row_number") if isinstance(item, dict) else item
+        text = str(value or "").strip()
+        if not text.isdigit():
+            continue
+        row_number = int(text)
+        if row_number in seen:
+            continue
+        seen.add(row_number)
+        row_numbers.append(row_number)
+    return row_numbers
+
+
+def delete_rows(ctx: TaskContext, selections: list[dict[str, str] | int | str]) -> dict:
+    row_numbers = _extract_selected_row_numbers(selections)
+    if not row_numbers:
+        raise RuntimeError("请先勾选要删除的资格名单成员")
+
+    run_dir = ensure_run_dir("qualification-delete")
+    ensure_qualification_master()
+    snapshot_file = run_dir / "qualification_snapshot.xlsx"
+    if QUALIFICATION_MASTER_PATH.exists():
+        shutil.copy2(QUALIFICATION_MASTER_PATH, snapshot_file)
+
+    existing = load_master_rows()
+    selected_set = set(row_numbers)
+    deleted_rows: list[dict[str, str | int]] = []
+    remaining: list[MasterRow] = []
+    total = len(existing)
+
+    for idx, row in enumerate(existing, start=1):
+        ctx.set_progress(idx, total, f"检查资格名单：{row.name}")
+        if row.row_number in selected_set:
+            deleted_rows.append(row.to_dict())
+            continue
+        remaining.append(row)
+
+    if not deleted_rows:
+        raise RuntimeError("未匹配到要删除的资格名单成员")
+
+    save_master_rows(remaining)
+    result = {
+        "run_dir": str(run_dir),
+        "snapshot_file": str(snapshot_file),
+        "master_file": str(QUALIFICATION_MASTER_PATH),
+        "deleted": len(deleted_rows),
+        "total_after": len(remaining),
+        "deleted_rows": deleted_rows,
+    }
+    write_json(run_dir / "delete_result.json", result)
     return result
 
 

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+jinja2
+openpyxl
+playwright
+aiohttp
+pandas
+pytest
+python-multipart

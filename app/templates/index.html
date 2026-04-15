@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成电杯报名数据管理系统</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">UESTC TT Manager</p>
+        <h1>成电杯报名数据管理系统</h1>
+        <p class="subtitle">金数据导出、资格名单维护、报名比对、QQ 通知、优赛上传表，统一在本地页面里完成。</p>
+      </div>
+      <div class="hero-status" id="global-task-status">等待操作</div>
+    </header>
+
+    <section class="card">
+      <h2>系统配置</h2>
+      <div class="grid two">
+        <label>成电杯赛事群群号<input id="event_group_id" type="text"></label>
+        <label>NapCat 配置路径<input id="napcat_config_path" type="text"></label>
+        <label>金数据主页<input id="jinshuju_home_url" type="text"></label>
+        <label>金数据 Profile 目录<input id="jinshuju_profile_dir" type="text"></label>
+      </div>
+      <label>通知模板<textarea id="notify_template" rows="3"></textarea></label>
+      <div class="actions">
+        <button id="save-config-btn">保存配置</button>
+        <button id="check-session-btn">检查金数据登录</button>
+        <button id="discover-forms-btn">登录并刷新表单列表</button>
+      </div>
+      <div class="grid four">
+        <div>
+          <h3>资格赛报名表</h3>
+          <select id="qualification_select"></select>
+          <input id="qualification_title" type="text" placeholder="手动输入表单标题">
+          <input id="qualification_entries_url" type="text" placeholder="可选：entries 直达链接">
+        </div>
+        <div>
+          <h3>正赛单打报名表</h3>
+          <select id="singles_select"></select>
+          <input id="singles_title" type="text" placeholder="手动输入表单标题">
+          <input id="singles_entries_url" type="text" placeholder="可选：entries 直达链接">
+        </div>
+        <div>
+          <h3>正赛双打报名表</h3>
+          <select id="doubles_select"></select>
+          <input id="doubles_title" type="text" placeholder="手动输入表单标题">
+          <input id="doubles_entries_url" type="text" placeholder="可选：entries 直达链接">
+        </div>
+        <div>
+          <h3>正赛团体报名表</h3>
+          <select id="team_select"></select>
+          <input id="team_title" type="text" placeholder="手动输入表单标题">
+          <input id="team_entries_url" type="text" placeholder="可选：entries 直达链接">
+        </div>
+      </div>
+      <div class="actions">
+        <select id="export_binding">
+          <option value="qualification_form">导出资格赛报名表</option>
+          <option value="singles_form">导出正赛单打报名表</option>
+          <option value="doubles_form">导出正赛双打报名表</option>
+          <option value="team_form">导出正赛团体报名表</option>
+        </select>
+        <button id="export-form-btn">导出已绑定表单</button>
+      </div>
+      <div id="forms-discover-result" class="result-box"></div>
+      <div id="form-export-result" class="result-box"></div>
+    </section>
+
+    <section class="card">
+      <h2>资格名单维护</h2>
+      <label>新增正赛资格人员姓名<textarea id="qualification_names" rows="6" placeholder="每行一个姓名"></textarea></label>
+      <div class="actions">
+        <button id="resolve-names-btn">从资格赛报名表匹配 QQ</button>
+        <button id="refresh-master-btn">刷新本地资格名单</button>
+        <button id="export-master-btn">导出本地资格名单 Excel</button>
+        <button id="toggle-master-btn" type="button">收起已获取资格名单</button>
+      </div>
+      <div id="qualification-resolve-result" class="result-box"></div>
+      <div id="qualification-master-result" class="result-box"></div>
+    </section>
+
+    <section class="card">
+      <h2>单打比对与通知</h2>
+      <div class="actions">
+        <button id="compare-form-btn">比对：单打报名但没在资格赛报名表出现</button>
+        <button id="compare-qualified-btn">比对：有资格但没报单打</button>
+      </div>
+      <div id="compare-form-result" class="result-box"></div>
+      <div id="compare-qualified-result" class="result-box"></div>
+      <div class="actions">
+        <button id="notify-precheck-btn">对“有资格但没报单打”名单做 QQ 预检</button>
+        <button id="notify-send-btn">给勾选对象发送通知</button>
+      </div>
+      <div id="notify-precheck-result" class="result-box"></div>
+      <div id="notify-send-result" class="result-box"></div>
+    </section>
+
+    <section class="card">
+      <h2>优赛上传表</h2>
+      <div class="grid three">
+        <label>单打最终报名文件路径<input id="final_singles_file" type="text"></label>
+        <label>双打最终报名文件路径<input id="final_doubles_file" type="text"></label>
+        <label>团体最终报名文件路径<input id="final_team_file" type="text"></label>
+      </div>
+      <div class="grid three">
+        <label>上传单打文件<input id="final_singles_upload" type="file" accept=".xlsx,.xls,.csv"></label>
+        <label>上传双打文件<input id="final_doubles_upload" type="file" accept=".xlsx,.xls,.csv"></label>
+        <label>上传团体文件<input id="final_team_upload" type="file" accept=".xlsx,.xls,.csv"></label>
+      </div>
+      <div class="actions">
+        <button id="converter-prepare-btn">查重并生成 sheet_output</button>
+        <button id="converter-confirm-btn">确认删除重复项并生成优赛上传表</button>
+      </div>
+      <div id="converter-prepare-result" class="result-box"></div>
+      <div id="converter-confirm-result" class="result-box"></div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

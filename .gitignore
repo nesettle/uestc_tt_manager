@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+
+browser_state/
+runs/
+
+data/config.json
+data/qualification_master.xlsx
+
+vendor/UESTC_TT_registration_converter/.git/
+
+.DS_Store
+Thumbs.db

@@ -7,7 +7,6 @@
 - Web / 源码模式：适合开发、调试和手动运行
 - 桌面版源码：用于构建可直接分发的 Windows 安装包
 
-
 ## 主要功能
 
 - 绑定金数据中的 4 张表
@@ -32,6 +31,7 @@
 - QQ 通知：NapCat OneBot 11 WebSocket
 - 表格处理：openpyxl + pandas
 - 桌面封装：pywebview + Qt 后端（qtpy + PySide6）
+- 安装包构建：PyInstaller + Inno Setup
 
 ## 重要目录
 
@@ -280,6 +280,26 @@ C:\ProgramData\NapCatQQ Desktop\runtime\NapCatQQ\config\onebot11_你的QQ号.jso
 - `upload_preview.xlsx`
 - `优赛上传表.xlsx`
 
+## 常见问题
+
+### 1. 金数据导出失败
+
+优先检查：
+
+- 是否仍处于已登录状态
+- 金数据 Profile 目录是否可用
+- 绑定的表单是否正确
+
+调试文件通常位于对应任务的 `runs/.../exports/.../` 目录中。
+
+### 2. QQ 预检通过但无法发送
+
+常见原因：
+
+- 群成员未找到
+- 当前 QQ 环境不支持该对象的群临时会话
+- NapCat 未正常在线
+
 ## 导出与输出目录
 
 金数据表单导出后，文件会保留两份：
@@ -339,47 +359,6 @@ powershell -ExecutionPolicy Bypass -File .\desktop\build_installer.ps1
 ```text
 release\UESTC_TT_Manager_Setup.exe
 ```
-
-## 常见问题
-
-### 1. 新电脑为什么还要重新配置
-
-以下内容天然是本机相关的，迁移到新电脑后需要重新填写：
-
-- NapCat 配置路径
-- 金数据登录态
-- 赛事群群号
-- 4 张金数据表绑定
-
-### 2. 金数据导出失败
-
-优先检查：
-
-- 是否仍处于已登录状态
-- 金数据 Profile 目录是否可用
-- 绑定的表单是否正确
-
-调试文件通常位于对应任务的 `runs/.../exports/.../` 目录中。
-
-### 3. QQ 预检通过但无法发送
-
-常见原因：
-
-- 群成员未找到
-- 当前 QQ 环境不支持该对象的群临时会话
-- NapCat 未正常在线
-
-### 4. 为什么不提交启动器和二进制文件
-
-仓库只保留源码和构建脚本，以下内容不提交：
-
-- `launcher/`
-- `build-*`
-- `dist-*`
-- `release/`
-- 浏览器登录态、运行目录、导出数据、真实名单
-
-安装包通过 GitHub Release 分发，不通过 Git 仓库提交。
 
 ## 隐私与仓库建议
 

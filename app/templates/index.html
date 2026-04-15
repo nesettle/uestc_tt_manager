@@ -22,7 +22,7 @@
       <div class="result-box">
         <p>首次在新设备上使用时，建议先按下面顺序完成准备。</p>
         <ol>
-          <li>在项目根目录创建虚拟环境并安装依赖，然后执行 `uvicorn app.main:app --host 127.0.0.1 --port 8050 --reload` 启动服务。</li>
+          <li>桌面版安装后直接双击打开；源码模式则在项目根目录创建虚拟环境并安装依赖。</li>
           <li>打开金数据并在可见浏览器中完成登录，系统会把登录态保存到本地 `browser_state/`。</li>
           <li>安装并配置 NapCat。需要在 NapCat WebUI 中启用 OneBot 11 的 WS 服务端。</li>
           <li>把 NapCat 生成的 `onebot11_你的QQ号.json` 配置文件路径填到下方“NapCat 配置路径”。</li>
@@ -35,7 +35,13 @@
           <li>把这条本机路径填写到系统配置中。不同电脑、不同 QQ 号的路径都可能不同。</li>
         </ol>
       </div>
+      <div class="actions">
+        <button id="runtime-check-btn" type="button">刷新环境自检</button>
+        <button id="open-data-dir-btn" type="button">打开用户数据目录</button>
+        <button id="open-runs-dir-btn" type="button">打开日志/运行目录</button>
+      </div>
       <div id="startup-check" class="result-box"></div>
+      <div id="runtime-check-result" class="result-box"></div>
     </section>
 
     <section class="card">

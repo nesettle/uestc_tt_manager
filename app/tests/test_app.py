@@ -54,6 +54,65 @@ def test_open_form_exports_dir_opens_explorer(monkeypatch):
     assert str(captured["args"][1]).endswith("data\\form_exports")
 
 
+def test_runtime_paths_route_returns_summary(monkeypatch):
+    client = TestClient(app)
+
+    monkeypatch.setattr(
+        "app.main.runtime_summary",
+        lambda: {"desktop_mode": False, "frozen": False, "paths": {"user_data_root": r"C:\demo"}},
+    )
+    response = client.get("/api/runtime/paths")
+    assert response.status_code == 200
+    assert response.json()["paths"]["user_data_root"] == r"C:\demo"
+
+
+def test_runtime_check_route_includes_napcat(monkeypatch):
+    client = TestClient(app)
+
+    monkeypatch.setattr(
+        "app.main.runtime_summary",
+        lambda: {"desktop_mode": True, "frozen": False, "paths": {"user_data_root": r"C:\demo"}},
+    )
+    monkeypatch.setattr(
+        "app.main.notify.system_check",
+        lambda config: {"connected": False, "message": "尚未配置"},
+    )
+    response = client.get("/api/runtime/check")
+    assert response.status_code == 200
+    assert response.json()["napcat"]["message"] == "尚未配置"
+
+
+def test_open_data_dir_calls_explorer(monkeypatch):
+    client = TestClient(app)
+    captured = {}
+
+    def fake_open(path):
+        captured["path"] = str(path)
+
+    class DummyPaths:
+        user_data_root = r"C:\demo-data"
+
+    monkeypatch.setattr("app.main.explorer_open", fake_open)
+    monkeypatch.setattr("app.main.get_runtime_paths", lambda: DummyPaths())
+    response = client.post("/api/runtime/open-data-dir")
+    assert response.status_code == 200
+    assert response.json()["path"] == r"C:\demo-data"
+    assert captured["path"] == r"C:\demo-data"
+
+
+def test_open_runs_dir_calls_explorer(monkeypatch):
+    client = TestClient(app)
+    captured = {}
+
+    def fake_open(path):
+        captured["path"] = str(path)
+
+    monkeypatch.setattr("app.main.explorer_open", fake_open)
+    response = client.post("/api/runtime/open-runs-dir")
+    assert response.status_code == 200
+    assert captured["path"].endswith("runs")
+
+
 def test_converter_prepare_accepts_json(monkeypatch):
     client = TestClient(app)
 

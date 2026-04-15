@@ -1,0 +1,5 @@
+bottle
+proxy_tools
+qtpy
+PySide6
+pyinstaller

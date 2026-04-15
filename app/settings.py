@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 from typing import Any
 
+from app.runtime import get_runtime_paths, initialize_runtime_environment
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "data"
-RUNS_DIR = PROJECT_ROOT / "runs"
-FORM_EXPORTS_DIR = DATA_DIR / "form_exports"
-BROWSER_STATE_DIR = PROJECT_ROOT / "browser_state"
-STATIC_DIR = PROJECT_ROOT / "app" / "static"
-TEMPLATES_DIR = PROJECT_ROOT / "app" / "templates"
-VENDOR_DIR = PROJECT_ROOT / "vendor"
-CONFIG_PATH = DATA_DIR / "config.json"
-QUALIFICATION_MASTER_PATH = DATA_DIR / "qualification_master.xlsx"
 
+RUNTIME_PATHS = initialize_runtime_environment()
+PROJECT_ROOT = RUNTIME_PATHS.project_root
+RESOURCE_ROOT = RUNTIME_PATHS.resource_root
+USER_DATA_ROOT = RUNTIME_PATHS.user_data_root
+DATA_DIR = RUNTIME_PATHS.data_dir
+RUNS_DIR = RUNTIME_PATHS.runs_dir
+FORM_EXPORTS_DIR = RUNTIME_PATHS.form_exports_dir
+BROWSER_STATE_DIR = RUNTIME_PATHS.browser_state_dir
+STATIC_DIR = RUNTIME_PATHS.static_dir
+TEMPLATES_DIR = RUNTIME_PATHS.templates_dir
+VENDOR_DIR = RUNTIME_PATHS.vendor_dir
+CONFIG_PATH = RUNTIME_PATHS.config_path
+QUALIFICATION_MASTER_PATH = RUNTIME_PATHS.qualification_master_path
 DEFAULT_NAPCAT_CONFIG_PATH = ""
 DEFAULT_NOTIFY_TEMPLATE = (
     "{name}同学你好，我是乒协机器人，这边发现你在正赛资格名单中，但单打项目报名表中没有你的信息。"
@@ -88,12 +91,9 @@ class AppConfig:
                 data.get("jinshuju_profile_dir", str(BROWSER_STATE_DIR / "jinshuju_profile"))
             ).strip()
             or str(BROWSER_STATE_DIR / "jinshuju_profile"),
-            napcat_config_path=str(
-                data.get("napcat_config_path", DEFAULT_NAPCAT_CONFIG_PATH)
-            ).strip()
+            napcat_config_path=str(data.get("napcat_config_path", DEFAULT_NAPCAT_CONFIG_PATH)).strip()
             or DEFAULT_NAPCAT_CONFIG_PATH,
-            notify_template=str(data.get("notify_template", DEFAULT_NOTIFY_TEMPLATE)).strip()
-            or DEFAULT_NOTIFY_TEMPLATE,
+            notify_template=str(data.get("notify_template", DEFAULT_NOTIFY_TEMPLATE)).strip() or DEFAULT_NOTIFY_TEMPLATE,
             discovered_forms=discovered_forms,
         )
 
@@ -102,8 +102,7 @@ class AppConfig:
 
 
 def ensure_directories() -> None:
-    for path in (DATA_DIR, RUNS_DIR, FORM_EXPORTS_DIR, BROWSER_STATE_DIR, STATIC_DIR, TEMPLATES_DIR, VENDOR_DIR):
-        path.mkdir(parents=True, exist_ok=True)
+    initialize_runtime_environment()
 
 
 def load_config() -> AppConfig:

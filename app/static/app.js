@@ -6,6 +6,7 @@ const state = {
   converterPrepare: null,
   qualificationMasterRows: [],
   qualificationMasterCollapsed: false,
+  runtimeCheck: null,
 };
 
 function $(id) {
@@ -171,6 +172,51 @@ function renderStartupCheck(config) {
   renderRows("startup-check", rows, ["项目", "状态", "说明"], "暂无配置检查结果");
 }
 
+function renderRuntimeCheck(result) {
+  state.runtimeCheck = result;
+  const rows = [
+    {
+      项目: "运行模式",
+      状态: result.desktop_mode ? "桌面版" : "源码/Web 模式",
+      说明: result.frozen ? "当前为打包后的桌面发行版" : "当前为本地源码运行模式",
+    },
+    {
+      项目: "用户数据目录",
+      状态: result.paths?.user_data_root ? "可用" : "未知",
+      说明: result.paths?.user_data_root || "未获取到运行时数据目录",
+    },
+    {
+      项目: "运行日志目录",
+      状态: result.paths?.runs_dir ? "可用" : "未知",
+      说明: result.paths?.runs_dir || "未获取到运行日志目录",
+    },
+    {
+      项目: "Qt 桌面运行库",
+      状态: result.qtpy_installed && result.pyside6_installed ? "已就绪" : "缺少依赖",
+      说明:
+        result.qtpy_installed && result.pyside6_installed
+          ? "qtpy 与 PySide6 已安装"
+          : "桌面版当前使用 Qt 后端，需要 qtpy 与 PySide6",
+    },
+    {
+      项目: "Playwright 浏览器",
+      状态: result.bundled_playwright_exists ? "已就绪" : "未打包",
+      说明: result.playwright_browsers_path || "当前未检测到 PLAYWRIGHT_BROWSERS_PATH",
+    },
+    {
+      项目: "WebView2",
+      状态: result.webview2_installed ? "已安装" : "未检测到",
+      说明: result.webview2_version || "当前桌面版不依赖 WebView2，仅做附加检测",
+    },
+    {
+      项目: "NapCat 连接",
+      状态: result.napcat?.connected ? "已连接" : "未连接",
+      说明: result.napcat?.error || result.napcat?.message || "尚未完成 NapCat 系统预检",
+    },
+  ];
+  renderRows("runtime-check-result", rows, ["项目", "状态", "说明"], "暂无运行时自检结果");
+}
+
 function renderObjectSummary(targetId, data) {
   $(targetId).innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
 }
@@ -251,6 +297,29 @@ async function openFormExportsDir() {
     setGlobalStatus(`已打开导出文件夹：${result.path}`);
   } catch (error) {
     renderError("form-export-result", error);
+  }
+}
+
+async function loadRuntimeCheck() {
+  const result = await apiGet("/api/runtime/check");
+  renderRuntimeCheck(result);
+}
+
+async function openUserDataDir() {
+  try {
+    const result = await apiPostJson("/api/runtime/open-data-dir");
+    setGlobalStatus(`已打开用户数据目录：${result.path}`);
+  } catch (error) {
+    renderError("runtime-check-result", error);
+  }
+}
+
+async function openRunsDir() {
+  try {
+    const result = await apiPostJson("/api/runtime/open-runs-dir");
+    setGlobalStatus(`已打开日志/运行目录：${result.path}`);
+  } catch (error) {
+    renderError("runtime-check-result", error);
   }
 }
 
@@ -409,6 +478,7 @@ function renderConverterPrepare(result) {
 async function bootstrap() {
   fillConfig(await apiGet("/api/config"));
   await loadFormExportsDir();
+  await loadRuntimeCheck();
   renderDiscoveredForms(state.config?.discovered_forms || []);
   await loadQualificationMaster();
   updateQualificationMasterVisibility();
@@ -452,6 +522,9 @@ async function bootstrap() {
   });
 
   $("open-form-exports-btn").addEventListener("click", openFormExportsDir);
+  $("runtime-check-btn").addEventListener("click", loadRuntimeCheck);
+  $("open-data-dir-btn").addEventListener("click", openUserDataDir);
+  $("open-runs-dir-btn").addEventListener("click", openRunsDir);
 
   $("resolve-names-btn").addEventListener("click", async () => {
     try {

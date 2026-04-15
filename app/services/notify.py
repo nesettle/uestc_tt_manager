@@ -315,3 +315,48 @@ def precheck(ctx: TaskContext, config: AppConfig, payload_rows: list[dict[str, A
 def send(ctx: TaskContext, config: AppConfig, payload_rows: list[dict[str, Any]]) -> dict:
     recipients = recipients_from_payload(payload_rows, config.notify_template)
     return asyncio.run(_send_async(ctx, config, recipients))
+
+
+async def _system_check_async(config: AppConfig) -> dict[str, Any]:
+    config_path = Path(config.napcat_config_path).expanduser() if config.napcat_config_path.strip() else None
+    result: dict[str, Any] = {
+        "configured": bool(config.napcat_config_path.strip()),
+        "config_path": str(config_path) if config_path else "",
+        "config_exists": bool(config_path and config_path.exists()),
+        "connected": False,
+        "message": "",
+        "error": "",
+        "login_info": {},
+        "ws_server": {},
+    }
+    if not config_path:
+        result["message"] = "尚未填写 NapCat 配置路径。"
+        return result
+    if not config_path.exists():
+        result["error"] = "NapCat 配置文件不存在。"
+        return result
+    try:
+        ws_config = load_ws_server_config(config_path)
+        result["ws_server"] = {
+            "host": str(ws_config["host"]),
+            "port": int(ws_config["port"]),
+        }
+        async with NapCatWsClient(
+            host=ws_config["host"],
+            port=int(ws_config["port"]),
+            token=str(ws_config["token"]),
+        ) as client:
+            login_response = await client.request("get_login_info")
+            if login_response.get("status") == "ok" and login_response.get("retcode") == 0:
+                result["connected"] = True
+                result["message"] = "NapCat WebSocket 连接正常。"
+                result["login_info"] = login_response.get("data") or {}
+            else:
+                result["error"] = response_error_text(login_response)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def system_check(config: AppConfig) -> dict[str, Any]:
+    return asyncio.run(_system_check_async(config))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 from typing import Any
 
@@ -9,14 +8,24 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.runtime import explorer_open, get_runtime_paths, runtime_summary
 from app.services import compare, converter, jinshuju, notify, qualification
-from app.settings import AppConfig, DiscoveredForm, FORM_EXPORTS_DIR, TEMPLATES_DIR, load_config, save_config
 from app.services.common import ensure_run_dir
+from app.settings import (
+    AppConfig,
+    DiscoveredForm,
+    FORM_EXPORTS_DIR,
+    RUNS_DIR,
+    STATIC_DIR,
+    TEMPLATES_DIR,
+    load_config,
+    save_config,
+)
 from app.tasks import task_manager
 
 
 app = FastAPI(title="UESTC TT Manager")
-app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
@@ -42,6 +51,32 @@ async def update_config(request: Request) -> JSONResponse:
     config = _config_from_request(payload)
     save_config(config)
     return JSONResponse(config.to_dict())
+
+
+@app.get("/api/runtime/paths")
+def get_runtime_paths_api() -> JSONResponse:
+    return JSONResponse(runtime_summary())
+
+
+@app.get("/api/runtime/check")
+def get_runtime_check() -> JSONResponse:
+    config = load_config()
+    summary = runtime_summary()
+    summary["napcat"] = notify.system_check(config)
+    return JSONResponse(summary)
+
+
+@app.post("/api/runtime/open-data-dir")
+def open_data_dir() -> JSONResponse:
+    user_data_root = get_runtime_paths().user_data_root
+    explorer_open(user_data_root)
+    return JSONResponse({"path": str(user_data_root), "opened": True})
+
+
+@app.post("/api/runtime/open-runs-dir")
+def open_runs_dir() -> JSONResponse:
+    explorer_open(RUNS_DIR)
+    return JSONResponse({"path": str(RUNS_DIR), "opened": True})
 
 
 @app.get("/api/qualification/current")

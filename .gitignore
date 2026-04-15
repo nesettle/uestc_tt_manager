@@ -13,6 +13,13 @@ data/qualification_master.xlsx
 data/form_exports/
 
 vendor/UESTC_TT_registration_converter/.git/
+build-launcher/
+dist-launcher/
+launcher/
+build-desktop/
+dist-desktop/
+desktop/build_assets/
+release/
 
 .DS_Store
 Thumbs.db
